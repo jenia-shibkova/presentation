@@ -1,0 +1,478 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Webpack</title>
+
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<!-- <link rel="stylesheet" href="lib/css/monokai.css"> -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section class="slide slide--present" data-background="white">
+					<h1 class="slide__heading marked-text heading--webpack">
+						
+					</h1>
+				</section>
+				<section>
+					<section class="slide--webpack" data-background="white">				
+					</section>					
+
+					<section class="slide slide--present" data-background="white">
+						<h2 class="slide__heading marked-text">	Dependency graph</h2>
+						<img src="img/webpack_explained.png" width="1000" height="550" alt="webpack">
+					</section>
+
+					<section class="slide slide--present" data-background="white">
+					    <h2 class="slide__heading marked-text">bundle.js / index.html</h2>
+						<img src="img/imports.png" alt="webpack">
+						<img src="img/scriptTag.png" alt="webpack">
+					</section>
+					
+					<section class="slide slide--question">
+						<h2 class="slide__heading marked-text">Advantages</h2>
+						<ul>
+							<li class="fragment">helps you bundle your resources</li>
+							<li class="fragment">managing dependencies.</li>
+							<li class="fragment">can run Babel transpilation to ES5,
+							 allowing you to use the latest JavaScript features without worrying about browser support.</li>
+							 <li class="fragment">can run a development webserver</li>
+							<li class="fragment">minification.</li>
+							<li class="fragment">can perform tree shaking.</li>
+							<li class="fragment">watches for changes and re-runs the tasks.</li>
+						</ul>
+					</section>
+					<section class="slide slide--present" data-background="white">
+						<h2 class="slide__heading marked-text">Common webpack.config</h2>
+						<pre>
+							<code data-trim>
+									const path = require('path')
+									const fs = require('fs')
+									const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+									const CopyWebpackPlugin = require('copy-webpack-plugin')
+									const HtmlWebpackPlugin = require('html-webpack-plugin')
+									const { VueLoaderPlugin } = require('vue-loader')
+									
+									const PATHS = {
+									  src: path.join(__dirname, '../src'),
+									  dist: path.join(__dirname, '../dist'),
+									  assets: 'assets/'
+									}
+									
+									const PAGES_DIR = PATHS.src
+									const PAGES = fs.readdirSync(PAGES_DIR).filter(fileName => fileName.endsWith('.html'))
+									
+									module.exports = {
+									  externals: {
+										paths: PATHS
+									  },
+									  entry: {
+										app: PATHS.src,
+									  },
+									  output: {
+										filename: `${PATHS.assets}js/[name].[hash].js`,
+										path: PATHS.dist,
+										publicPath: '/'
+									  },
+									  optimization: {
+										splitChunks: {
+										  cacheGroups: {
+											vendor: {
+											  name: 'vendors',
+											  test: /node_modules/,
+											  chunks: 'all',
+											  enforce: true
+											}
+										  }
+										}
+									  },
+									  module: {
+										rules: [{
+										  test: /\.js$/,
+										  loader: 'babel-loader',
+										  exclude: '/node_modules/'
+										}, {
+										  test: /\.vue$/,
+										  loader: 'vue-loader',
+										  options: {
+											loader: {
+											  scss: 'vue-style-loader!css-loader!sass-loader'
+											}
+										  }
+										}, {
+										  test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+										  loader: 'file-loader',
+										  options: {
+											name: '[name].[ext]'
+										  }
+										}, {
+										  test: /\.(png|jpg|gif|svg)$/,
+										  loader: 'file-loader',
+										  options: {
+											name: '[name].[ext]'
+										  }
+										}, {
+										  test: /\.scss$/,
+										  use: [
+											'style-loader',
+											MiniCssExtractPlugin.loader,
+											{
+											  loader: 'css-loader',
+											  options: { sourceMap: true }
+											}, {
+											  loader: 'postcss-loader',
+											  options: { sourceMap: true, config: { path: `./postcss.config.js` } }
+											}, {
+											  loader: 'sass-loader',
+											  options: { sourceMap: true }
+											}
+										  ]
+										}, {
+										  test: /\.css$/,
+										  use: [
+											'style-loader',
+											MiniCssExtractPlugin.loader,
+											{
+											  loader: 'css-loader',
+											  options: { sourceMap: true }
+											}, {
+											  loader: 'postcss-loader',
+											  options: { sourceMap: true, config: { path: `./postcss.config.js` } }
+											}
+										  ]
+										}]
+									  },
+									  resolve: {
+										alias: {
+										  '~': PATHS.src,
+										  'vue$': 'vue/dist/vue.js',
+										}
+									  },
+									  plugins: [
+										new VueLoaderPlugin(),
+										new MiniCssExtractPlugin({
+										  filename: `${PATHS.assets}css/[name].[hash].css`,
+										}),
+										new CopyWebpackPlugin([
+										  { from: `${PATHS.src}/${PATHS.assets}img`, to: `${PATHS.assets}img` },
+										  { from: `${PATHS.src}/${PATHS.assets}fonts`, to: `${PATHS.assets}fonts` },
+										  { from: `${PATHS.src}/static`, to: '' },
+										]),
+										...PAGES.map(page => new HtmlWebpackPlugin({
+										  template: `${PAGES_DIR}/${page}`,
+										  filename: `./${page}`
+										}))
+									  ],
+									}									
+							</code>
+						</pre>
+					</section>
+
+					<section class="slide slide--present" data-background="black">
+						<h3 class="slide__heading marked-text">Configuring webpack is painful</h3>
+						<img data-natural-width="500" data-natural-height="270" src="https://s3.amazonaws.com/media-p.slid.es/uploads/337684/images/1824722/much_more.gif" data-lazy-loaded="">
+					</section>
+					
+
+					<section class="slide slide--present" data-background="white">
+						<h3 class="slide__heading marked-text">Project structure.</h3>
+						<img src="img/structure.jpg" width="550" height="550" alt="structure">						
+					</section>
+
+					<section class="slide slide--present" data-background="white">
+						<h3 class="slide__heading marked-text">Webpack install.</h3>
+						<pre>
+							<code data-trim>
+								npm init
+								npm install --save-dev --save-exact webpack webpack-cli
+							</code>
+						</pre>												
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">package.json</h3>
+						<pre>
+							<code data-trim>
+								{ /*...*/
+								  "scripts": {
+								    "build": "webpack"
+								}
+							</code>
+						</pre>
+						<pre>
+							<code data-trim>
+								npm run build
+							</code>
+						</pre>								
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Webpack configuration</h3>
+						<pre>
+							<code data-trim>
+								module.exports = {
+								  mode: 'development',
+								  entry: ,
+								  output: {},
+								  },
+								  module: {
+								    /*...*/
+								  },
+								  plugins: [
+								    /*...*/
+								  ],
+								};
+							</code>
+						</pre>
+														
+					</section>
+
+					<section class="slide" data-background="white">
+					    <h3 class="slide__heading marked-text">The entry point</h3>
+						<span class="small-text">Webpack.config.js</span>
+						<pre>
+							<code data-trim>
+								module.exports = {
+								  /*...*/
+								  entry: './src/index.js'
+								  /*...*/
+								}
+							</code>
+						</pre>
+						
+						<pre>
+							<code data-trim>
+module.exports = {
+  //...
+  entry: {
+    home: './home.js',
+    about: './about.js',
+    contact: './contact.js'
+  }
+};
+							</code>
+						</pre>
+					</section>
+
+					<section class="slide" data-background="white">
+					    <h3 class="slide__heading marked-text">The output</h3>
+						<span class="small-text">Webpack.config.js</span>
+						<pre>
+							<code data-trim>
+const path = require('path');
+
+module.exports = {
+  /*...*/
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'app.js'
+  }
+  /*...*/
+}
+							</code>
+						</pre>								
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Set mode 'development'</h3>
+						<pre>
+							<code>									
+module.exports = {
+  mode: 'development'
+}
+							</code>
+						</pre>
+						<pre>
+							<code>
+webpack --mode=development
+						    </code>
+						</pre>
+						<pre>
+							<code>
+new webpack.EnvironmentPlugin({
+  NODE_ENV: 'development', // use 'development' unless process.env.NODE_ENV is defined
+  DEBUG: false
+});	
+							</code>
+						</pre>										
+					</section>
+					
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">'production' vs 'development' (mode)</h3>
+						<img src="img/dev-prod.jpg" alt="difference">
+					</section>
+											
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Loaders</h3>
+						<span class="small-text">webpack.config.js</span>
+						<pre>
+							<code data-trim>
+module: {
+  rules: [
+    {
+      test: /\.s[ac]ss$/i,
+      use: [
+             'style-loader',  // 3. inject styles into DOM
+             'css-loader',   // 2. convert css into common.js
+             'sass-loader', // 1. convert scss into css
+            ],
+    }
+  ],
+}  
+							</code>
+						</pre>			
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Handling images</h3>
+						<span class="small-text">Webpack.config.js</span>
+						<pre>
+							<code data-trim>
+module.exports = {
+  /*...*/
+  module: {
+    rules: [
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: [
+          'file-loader'
+        ]
+      }
+    ]
+  }
+  /*...*/
+}  
+                            </code>
+						</pre>																			
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Handling images</h3>
+						<span class="small-text">someModule.js</span>
+						    <pre>
+								<code data-trim>
+import Icon from './icon.png'
+
+const img = new Image()
+img.src = Icon
+element.appendChild(img)
+								</code>
+							</pre>																			
+					</section>
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Loaders</h3>
+						<span class="small-text">webpack.config.js</span>
+						<pre>
+							<code data-trim>
+module.exports = {
+  /*...*/
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      }
+    ]
+  }
+  /*...*/
+} 
+							</code>
+						</pre>			
+					</section>
+
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Plugins</h3>
+						<pre>
+							<code data-trim>
+								const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+								module.exports = {
+								/*...*/
+								plugins: [
+								  new HTMLWebpackPlugin()
+								]
+								/*...*/
+								}
+							</code>
+						</pre>
+						<pre>
+							<code data-trim>
+								module.exports = {
+								/*...*/
+								plugins: [
+								  new HtmlWebpackPlugin({
+								    template: `./src/index.html`
+								  })
+								]
+								/*...*/
+								}
+							</code>
+						</pre>								
+					</section>					
+									
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Source-map</h3>
+						<span class="small-text">webpack.config.js</span>								
+						<pre>
+							<code data-trim>
+module.exports = {
+  /*...*/
+  devtool: 'source-map',
+  /*...*/
+}
+							</code>
+						</pre>								
+					</section>
+					<section class="slide" data-background="white">
+						<h3 class="slide__heading marked-text">Webpack.config.js</h3>
+						<span class="small-text">source-maps</span>
+						<img src="img/source.jpg" alt="source" width="1000" height="516">
+					</section>					
+				</section>			
+				<section class="slide slide--present" data-background="white">
+					<h2 class="slide__heading marked-text">Thank you!</h2>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
